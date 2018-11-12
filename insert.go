@@ -6,9 +6,9 @@ import (
 
 // Insert insert a new row into the table
 func (d *Database) Insert(query InsertQuery) error {
-	sql := query.sql()
+	sql := query.sql(d)
 
-	_, err := d.executeNonQuery(sql)
+	_, err := d.execute(sql)
 	if err != nil {
 		d.log.Error("Unable to execute insert query: %s", err)
 		return err
@@ -18,16 +18,13 @@ func (d *Database) Insert(query InsertQuery) error {
 }
 
 // InsertMany insert multiple new rows into the table
-func (d *Database) InsertMany(query []InsertQuery) error {
-	sql := "BEGIN TRANSACTION;"
-
-	for _, q := range query {
-		sql += " " + q.sql() + " "
+func (d *Database) InsertMany(queries []InsertQuery) error {
+	rows := make([]string, len(queries))
+	for i, query := range queries {
+		rows[i] = query.sql(d)
 	}
 
-	sql += "END TRANSACTION;"
-
-	_, err := d.executeNonQuery(sql)
+	_, err := d.executeMany(rows)
 	if err != nil {
 		d.log.Error("Unable to perform multiple INSERT transaction: %s", err)
 		return err
@@ -43,10 +40,14 @@ type InsertQuery struct {
 	IgnoreConflict bool
 }
 
-func (q InsertQuery) sql() string {
+func (q InsertQuery) sql(d *Database) string {
 	sql := "INSERT "
 	if q.IgnoreConflict {
-		sql += " OR IGNORE "
+		if d.dbType == ServiceMySQL {
+			sql += " IGNORE "
+		} else if d.dbType == ServiceSQLite {
+			sql += " OR IGNORE "
+		}
 	}
 
 	sql += " INTO `" + stripName(q.Table.Name) + "`("

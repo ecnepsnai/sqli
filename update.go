@@ -8,7 +8,7 @@ import (
 func (d *Database) Update(query UpdateQuery) error {
 	sql := query.sql()
 
-	_, err := d.executeNonQuery(sql)
+	_, err := d.execute(sql)
 	if err != nil {
 		d.log.Error("Unable to perform update query: %s", err)
 		return err

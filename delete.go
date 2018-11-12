@@ -4,7 +4,7 @@ package sqli
 func (d *Database) Delete(query DeleteQuery) error {
 	sql := query.sql()
 
-	_, err := d.executeNonQuery(sql)
+	_, err := d.execute(sql)
 	if err != nil {
 		d.log.Error("Unable to execute delete query: %s", err)
 		return err

@@ -4,35 +4,31 @@ import (
 	"database/sql"
 
 	"github.com/ecnepsnai/logtic"
-
-	// sqlite3
-	_ "github.com/mattn/go-sqlite3"
 )
 
 // Database describes a sqli instance
 type Database struct {
-	log *logtic.Source
-	db  *sql.DB
+	log        *logtic.Source
+	db         *sql.DB
+	connection *Connection
+	dbType     string
 }
 
-// Open open a new database file at the specified path
-func Open(path string) (*Database, error) {
-	db, err := sql.Open("sqlite3", path)
-	log := logtic.Connect("sql")
-	if err != nil {
-		log.Error("Unable to open sqlite database file '%s': %s", path, err)
-		return nil, err
-	}
-
-	database := Database{
-		log: log,
-		db:  db,
-	}
-
-	log.Info("Connected to database file '%s'", path)
-
-	return &database, nil
+// Connection describes connection information to a SQL server
+type Connection struct {
+	Host     string
+	Port     uint16
+	Username string
+	Password string
+	Database string
 }
+
+const (
+	// ServiceMySQL enum value for MySQL type SQL instances
+	ServiceMySQL = "MySQL"
+	// ServiceSQLite enum value for SQLite type SQL instances
+	ServiceSQLite = "SQLite"
+)
 
 // Close close the database file
 func (d *Database) Close() {

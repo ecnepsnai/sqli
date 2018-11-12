@@ -1,18 +1,37 @@
 # sqli
 
-SQLi is an SQL interface in Golang. It obscures the SQL away form your application and (eventually) allows you to use
-multiple different types of SQL providers (MySQL, PostgreSQL, and SQLite).
+SQLi is an SQL interface in Golang. It masks the SQL away form your application and allows you to use
+multiple different types of SQL providers (MySQL, PostgreSQL*, and SQLite).
 
-Only SQLite is supported right now. MySQL and PostgreSQL are to come.
+*PostgreSQL support coming soon.
 
 # Usage
 
 ## Connect
 
+### SQLite
+
 ```golang
-db, err := sqli.Open("database.db")
+db, err := sqli.SQLite("database.db")
 if err != nil {
 	fmt.Printf("Unable to open sqlite db: %s\n", err)
+	os.Exit(1)
+}
+defer db.Close()
+```
+
+### MySQL
+
+```golang
+db, err := sqli.MySQL(sqli.Connection{
+	Host: "127.0.0.1",
+	Port: 3306,
+	Username: "sqli_user",
+	Password: "not this",
+	Database: "sqli",
+})
+if err != nil {
+	fmt.Printf("Unable to connect to mysql server: %s\n", err)
 	os.Exit(1)
 }
 defer db.Close()
@@ -87,38 +106,56 @@ if err != nil {
 ### Single Row
 
 ```golang
-data, err := db.SelectSingle(SelectQuery{
+row := db.SelectSingle(sqli.SelectQuery{
 	Table: table,
-	Where: Where{
-		WhereEqual("id", 0),
+	Where: sqli.Where{
+		sqli.WhereEqual("id", 1),
 	},
 })
-if err != nil {
-	fmt.Printf("Error selecting single row: %s", err)
+type exampleData struct{
+	id    int
+	value string
+}
+data := exampleData{}
+if err := row.Scan(&data.id, &data.value); err != nil {
+	fmt.Printf("Error selecting single row: %s", err.Error())
 }
 ```
 
 ### Multiple Rows
 
 ```golang
-results, err := db.Select(SelectQuery{
+type exampleData struct{
+	id    int
+	value string
+}
+var results []exampleData
+err = db.Select(sqli.SelectQuery{
 	Table: table,
 	Columns: []string{
 		"value",
 	},
-	Order: Order{
+	Order: sqli.Order{
 		Column:     "id",
 		Descending: true,
 	},
-	Where: Where{
-		WhereGreaterThan("id", 100),
+	Where: sqli.Where{
+		sqli.WhereGreaterThan("id", expectedID),
 		"AND",
-		WhereNotEqual("id", 101),
+		sqli.WhereNotEqual("id", expectedID+10),
 	},
 	Limit: 50,
+}, func(row Row) error {
+	to := exampleData{}
+	if err := row.Scan(&to.value); err != nil {
+		fmt.Printf("Error selecting multilpe row: %s", err.Error())
+		return err
+	}
+	results = append(results, to)
+	return nil
 })
 if err != nil {
-	fmt.Printf("Error selecting multilpe row: %s", err)
+	fmt.Printf("Error selecting multilpe row: %s", err.Error())
 }
 ```
 

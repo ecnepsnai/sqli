@@ -5,54 +5,37 @@ import (
 	"strings"
 )
 
-// SelectSingle select a single row from the database. Will return (nil, nil) if nothing found.
-func (d *Database) SelectSingle(query SelectQuery) (map[string]interface{}, error) {
-	rows, err := d.Select(query)
-	if err != nil {
-		d.log.Error("Unable to execute select query: %s", err)
-		return nil, err
+// SelectSingle select a single row from the database.
+func (d *Database) SelectSingle(query SelectQuery) Row {
+	sql := query.sql()
+	d.log.Debug("%s", sql)
+	return Row{
+		row: d.db.QueryRow(sql),
 	}
-
-	if len(rows) == 0 {
-		return nil, nil
-	}
-
-	return rows[0], nil
 }
 
-// Select select multiple rows from the database. Will return (nil, nil) if nothing found.
-func (d *Database) Select(query SelectQuery) ([]map[string]interface{}, error) {
-	rows, err := d.query(query.sql())
+// Select select multiple rows from the database. Calls row() for each row returned
+func (d *Database) Select(query SelectQuery, row func(row Row) error) error {
+	sql := query.sql()
+	d.log.Debug("%s", sql)
+	rows, err := d.db.Query(sql)
 	if err != nil {
-		d.log.Error("Unable to execute select query: %s", err)
-		return nil, err
+		d.log.Error("Error performing SELECT query: %s", err.Error())
+		return err
 	}
 
-	var results []map[string]interface{}
-
-	cols, _ := rows.Columns()
 	for rows.Next() {
-		columns := make([]interface{}, len(cols))
-		columnPointers := make([]interface{}, len(cols))
-		for i := range columns {
-			columnPointers[i] = &columns[i]
+		rowErr := row(Row{
+			rows: rows,
+		})
+		if rowErr != nil {
+			d.log.Error("Error during row handling: %s", rowErr.Error())
+			return rowErr
 		}
-
-		if err := rows.Scan(columnPointers...); err != nil {
-			d.log.Error("Error scanning rows into map: %s", err)
-			return nil, err
-		}
-
-		m := make(map[string]interface{})
-		for i, colName := range cols {
-			val := columnPointers[i].(*interface{})
-			m[colName] = *val
-		}
-
-		results = append(results, m)
 	}
+	rows.Close()
 
-	return results, nil
+	return nil
 }
 
 // SelectQuery describes a select query
