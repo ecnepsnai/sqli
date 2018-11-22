@@ -99,6 +99,8 @@ func (table Table) mysql() (string, error) {
 		col := "`" + stripName(column.Name) + "` "
 		if column.Type == TypeString {
 			col += "VARCHAR"
+		} else if column.Type == TypeInteger {
+			col += "BIGINT"
 		} else {
 			col += column.Type
 		}
