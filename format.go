@@ -20,7 +20,10 @@ func sanitizeValue(value interface{}) string {
 	case "*string":
 		s, ok := value.(*string)
 		if !ok {
-			return fmt.Sprintf("'%s'", value)
+			return ""
+		}
+		if s == nil {
+			return ""
 		}
 		return sanitizeValue(*s)
 	case "int":
@@ -51,5 +54,5 @@ func sanitizeValue(value interface{}) string {
 		return "0"
 	}
 
-	return fmt.Sprintf("'%s'", value)
+	return ""
 }

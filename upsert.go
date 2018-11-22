@@ -78,8 +78,11 @@ func (d *Database) upsertMySQL(query InsertQuery) (string, error) {
 	columnNames := make([]string, len(columns))
 	columnValues := make([]string, len(columns))
 	for i, column := range columns {
-		columnNames[i] = stripName(column)
-		columnValues[i] = sanitizeValue(query.Values[column])
+		value := sanitizeValue(query.Values[column])
+		if len(value) > 0 {
+			columnNames[i] = stripName(column)
+			columnValues[i] = value
+		}
 	}
 
 	updateStrings := make([]string, len(columns))

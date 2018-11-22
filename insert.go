@@ -56,8 +56,11 @@ func (q InsertQuery) sql(d *Database) string {
 	columnNames := make([]string, len(columns))
 	columnValues := make([]string, len(columns))
 	for i, column := range columns {
-		columnNames[i] = stripName(column)
-		columnValues[i] = sanitizeValue(q.Values[column])
+		value := sanitizeValue(q.Values[column])
+		if len(value) > 0 {
+			columnNames[i] = stripName(column)
+			columnValues[i] = value
+		}
 	}
 
 	sql += strings.Join(columnNames, ",")
