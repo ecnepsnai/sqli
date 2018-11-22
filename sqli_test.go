@@ -33,14 +33,20 @@ var table = Table{
 			NotNull: true,
 			Unique:  true,
 		},
+		Column{
+			Name:   "optional",
+			Type:   TypeString,
+			Length: 16,
+		},
 	},
 }
 var file *logtic.File
 var log *logtic.Source
 
 type testObject struct {
-	id    int
-	value string
+	id       int
+	value    string
+	optional *string
 }
 
 func setupSQLite() {
@@ -139,14 +145,44 @@ func TestInsert(t *testing.T) {
 		t.Errorf("Error inserting row in table: %s", err)
 		t.FailNow()
 	}
+
+	s := "string pointer"
+	err = db.Insert(InsertQuery{
+		Table: table,
+		Values: map[string]interface{}{
+			"id":    12,
+			"value": &s,
+		},
+	})
+	if err != nil {
+		t.Errorf("Error inserting row in table: %s", err)
+		t.FailNow()
+	}
+
+	var n *string
+	err = db.Insert(InsertQuery{
+		Table: table,
+		Values: map[string]interface{}{
+			"id":      13,
+			"value":   "nil pointer",
+			"optionl": n,
+		},
+	})
+	if err != nil {
+		t.Errorf("Error inserting row in table: %s", err)
+		t.FailNow()
+	}
 }
 
 func TestUpsert(t *testing.T) {
+	var s *string
+
 	err := db.Insert(InsertQuery{
 		Table: table,
 		Values: map[string]interface{}{
-			"id":    100,
-			"value": "2nd insert test",
+			"id":       100,
+			"value":    "2nd insert test",
+			"optional": s,
 		},
 	})
 	if err != nil {
@@ -157,8 +193,9 @@ func TestUpsert(t *testing.T) {
 	err = db.Upsert(InsertQuery{
 		Table: table,
 		Values: map[string]interface{}{
-			"id":    100,
-			"value": "upsert test",
+			"id":       100,
+			"value":    "upsert test",
+			"optional": s,
 		},
 	})
 	if err != nil {
@@ -204,11 +241,8 @@ func TestUpdate(t *testing.T) {
 			WhereEqual("id", rowID),
 		},
 	})
-	data := struct {
-		id    int
-		value string
-	}{}
-	if err := row.Scan(&data.id, &data.value); err != nil {
+	var data testObject
+	if err := row.Scan(&data.id, &data.value, &data.optional); err != nil {
 		t.Errorf("Error selecting single row: %s", err)
 		t.FailNow()
 	}
@@ -290,7 +324,7 @@ func TestSelect(t *testing.T) {
 	})
 
 	data := testObject{}
-	if err := row.Scan(&data.id, &data.value); err != nil {
+	if err := row.Scan(&data.id, &data.value, &data.optional); err != nil {
 		t.Errorf("Error selecting single row: %s", err)
 		t.FailNow()
 	}

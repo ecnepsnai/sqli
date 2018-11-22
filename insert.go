@@ -53,13 +53,13 @@ func (q InsertQuery) sql(d *Database) string {
 	sql += " INTO `" + stripName(q.Table.Name) + "`("
 
 	columns := mapKeys(q.Values)
-	columnNames := make([]string, len(columns))
-	columnValues := make([]string, len(columns))
-	for i, column := range columns {
+	var columnNames []string
+	var columnValues []string
+	for _, column := range columns {
 		value := sanitizeValue(q.Values[column])
 		if len(value) > 0 {
-			columnNames[i] = stripName(column)
-			columnValues[i] = value
+			columnNames = append(columnNames, stripName(column))
+			columnValues = append(columnValues, value)
 		}
 	}
 

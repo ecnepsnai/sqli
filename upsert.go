@@ -75,19 +75,19 @@ func (d *Database) upsertMySQL(query InsertQuery) (string, error) {
 	sql += " ON DUPLICATE KEY UPDATE "
 
 	columns := mapKeys(query.Values)
-	columnNames := make([]string, len(columns))
-	columnValues := make([]string, len(columns))
-	for i, column := range columns {
+	var columnNames []string
+	var columnValues []string
+	for _, column := range columns {
 		value := sanitizeValue(query.Values[column])
 		if len(value) > 0 {
-			columnNames[i] = stripName(column)
-			columnValues[i] = value
+			columnNames = append(columnNames, stripName(column))
+			columnValues = append(columnValues, value)
 		}
 	}
 
-	updateStrings := make([]string, len(columns))
-	for i, columnName := range columns {
-		updateStrings[i] = "`" + stripName(columnName) + "` = " + sanitizeValue(query.Values[columnName])
+	updateStrings := make([]string, len(columnNames))
+	for i, columnName := range columnNames {
+		updateStrings[i] = "`" + columnName + "` = " + columnValues[i]
 	}
 
 	sql += strings.Join(updateStrings, ",")
