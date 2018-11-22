@@ -23,6 +23,13 @@ func Test_sanitizeValue(t *testing.T) {
 		t.Errorf("Sanitized string is incorrect. Expected %s got %s", expected, got)
 		t.Fail()
 	}
+	s := "hello world"
+	got = sanitizeValue(&s)
+	expected = "'hello world'"
+	if got != expected {
+		t.Errorf("Sanitized string is incorrect. Expected %s got %s", expected, got)
+		t.Fail()
+	}
 	got = sanitizeValue(1)
 	expected = "1"
 	if got != expected {

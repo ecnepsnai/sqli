@@ -17,6 +17,12 @@ func sanitizeValue(value interface{}) string {
 	switch typeOf {
 	case "string":
 		return "'" + strings.Replace(value.(string), "'", "''", -1) + "'"
+	case "*string":
+		s, ok := value.(*string)
+		if !ok {
+			return fmt.Sprintf("'%s'", value)
+		}
+		return sanitizeValue(*s)
 	case "int":
 		return fmt.Sprintf("%d", value.(int))
 	case "int16":
